@@ -1,0 +1,107 @@
+{
+    "CeyMo": {
+        "num_classes": 11,
+        "labels": {
+            "bus_lane": [
+                0,
+                255,
+                255
+            ],
+            "cycle_lane": [
+                0,
+                128,
+                255
+            ],
+            "diamond": [
+                178,
+                102,
+                255
+            ],
+            "junction_box": [
+                255,
+                255,
+                51
+            ],
+            "left_arrow": [
+                255,
+                102,
+                178
+            ],
+            "pedestrian_crossing": [
+                255,
+                255,
+                0
+            ],
+            "right_arrow": [
+                255,
+                0,
+                127
+            ],
+            "straight_arrow": [
+                255,
+                0,
+                255
+            ],
+            "slow": [
+                0,
+                255,
+                0
+            ],
+            "straight_left_arrow": [
+                255,
+                128,
+                0
+            ],
+            "straight_right_arrow": [
+                255,
+                0,
+                0
+            ]
+        }
+    },
+    "bdd100k": {
+        "num_classes": 19,
+        "labels": {
+            "crosswalk": [
+                219,
+                94,
+                86
+            ],
+            "double other": [
+                219,
+                194,
+                86
+            ],
+            "double white": [
+                145,
+                219,
+                86
+            ],
+            "double yellow": [
+                86,
+                219,
+                127
+            ],
+            "road curb": [
+                86,
+                211,
+                219
+            ],
+            "single other": [
+                86,
+                111,
+                219
+            ],
+            "single white": [
+                160,
+                86,
+                219
+            ],
+            "single yellow": [
+                219,
+                86,
+                178
+            ]
+        }
+    }
+}
