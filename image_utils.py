@@ -22,13 +22,16 @@ def sort_key(filename: str) -> int:
 
 def get_image_and_mask(folder_to_images: str,
                        folder_to_labels: str,
-                       fname: str = None) -> tuple:
+                       fname: str = None,
+                       apollo_dataset: bool = False) -> tuple:
     if fname is None:
         imgs_in_folder = os.listdir(folder_to_images)
         i = np.random.randint(0, len(imgs_in_folder))
         fname = imgs_in_folder[i]
     img = cv.imread(f'{folder_to_images}/{fname}')
     mask_name = (fname).replace('.jpg', '.png')
+    if apollo_dataset:
+        mask_name = (fname).replace('.jpg', '_bin.png')
     mask = cv.imread(f'{folder_to_labels}/{mask_name}')
     return img, mask
 
@@ -42,6 +45,28 @@ def get_labels_from_mask(mask: np.ndarray, dataset_labels: dict):
     return labels
 
 
+def check_label_is_in_mask(mask: np.ndarray, dataset_labels: dict, label: str):
+    color_to_check = np.array(dataset_labels[label])[::-1]
+    return np.any(np.all(mask.reshape(-1, 3) == color_to_check, axis=1))
+
+
+def get_fname_with_label(folder_to_images: str,
+                         folder_to_labels: str,
+                         dataset_name: str,
+                         label: str) -> str:
+    imgs_in_folder = os.listdir(folder_to_images)
+    dataset_labels = load_labels_from_json('dataset_labels.json')[dataset_name]['labels']
+    fnames_with_label = []
+    for fname in imgs_in_folder:
+        mask_name = (fname).replace('.jpg', '_bin.png')
+        mask = cv.imread(f'{folder_to_labels}/{mask_name}')
+        if check_label_is_in_mask(mask, dataset_labels, label):
+            print(fname)
+            fnames_with_label.append(fname)
+    return fnames_with_label
+
+
+#TODO : change to utils.py
 def load_labels_from_json(filename):
     with open(filename, 'r') as file:
         data = json.load(file)
