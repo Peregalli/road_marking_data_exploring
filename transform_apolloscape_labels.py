@@ -45,7 +45,8 @@ def upload_dataframe(labels_name_frame: pd.DataFrame,
                      new_dataset: pd.DataFrame,
                      fn: str,
                      lables_used: list):
-    new_lables = list(set(labels_name_frame[labels_name_frame['label'].isin(lables_used)].category))
+    category_used = labels_name_frame[labels_name_frame['label'].isin(lables_used)].category
+    new_lables = list(set(category_used))
     for new_label in new_lables:
         new_dataset.loc[new_dataset['fn'] == fn, new_label] = 1
     return new_dataset
@@ -65,16 +66,15 @@ def transform_apolloscape_labels(road: int,
     old_labels = load_labels_from_json('dataset_labels.json')['apolloscape_lanemark']['labels']
 
     create_folder(dst_folder)
-    new_dataset = pd.DataFrame(columns=['fn', 'Road', 'Record', 'lane', 'stopping', 'zebra', 'void'])
+    new_dataset = pd.DataFrame(columns=['fn', 'lane', 'stopping', 'zebra', 'void'])
 
     for record in range(1, records):
         print(f'Road {road:02d} - Record {record:03d} - Camera {camara:d}')
         folder_to_labels = os.path.join(DATA_ROOT, 'ApoloScape - Lane Segmentation', f'Labels_road{road:02d}/Label/Record{record:03d}/Camera {camara:d}')
         fn_labels = sorted(os.listdir(folder_to_labels))
         new_dataset['fn'] = fn_labels
-        new_dataset['Road'] = road
-        new_dataset['Record'] = record
         new_dataset[['lane', 'stopping', 'zebra', 'void']] = 0
+        dst_fn = f'labels_road{road:02d}_record{record:03d}_camera{camara:d}.csv'
 
         for fn in tqdm(fn_labels):
             mask = cv.imread(os.path.join(folder_to_labels, fn))
@@ -85,7 +85,7 @@ def transform_apolloscape_labels(road: int,
                 new_mask = change_mask_label(new_mask, label_used, dataset_v1)
             new_dataset = upload_dataframe(dataset_v1, new_dataset, fn, lables_used)
             cv.imwrite(os.path.join(dst_folder, fn), new_mask)
-        new_dataset.to_csv(os.path.join(dst_folder, f'labels_road{road:02d}_record{record:03d}_camera{camara:d}.csv'), index=False)
+        new_dataset.to_csv(os.path.join(dst_folder, dst_fn), index=False)
     return
 
 
@@ -95,3 +95,7 @@ def main():
     camara = 6
 
     transform_apolloscape_labels(road, records, camara)
+
+
+if __name__ == '__main__':
+    main()
