@@ -4,9 +4,11 @@ import cv2 as cv
 import numpy as np
 import os
 import pandas as pd
+import random
 
 from tqdm import tqdm
 from image_utils import load_labels_from_json, get_labels_from_mask
+from utils import list_to_csv
 
 
 def change_mask_label(mask: np.ndarray,
@@ -45,7 +47,7 @@ def create_folder(folder: str):
 def upload_dataframe(labels_name_frame: pd.DataFrame,
                      new_dataset: pd.DataFrame,
                      fn: str,
-                     lables_used: list):
+                     lables_used: list) -> pd.DataFrame:
     category_used = labels_name_frame[labels_name_frame['label'].isin(lables_used)].category
     new_lables = list(set(category_used))
     for new_label in new_lables:
@@ -53,11 +55,34 @@ def upload_dataframe(labels_name_frame: pd.DataFrame,
     return new_dataset
 
 
-def init_dataframe(labels_name_frame: pd.DataFrame, filenames: list):
-    new_dataset = pd.DataFrame(columns=['fn']+list(set(labels_name_frame.category)))
+def init_dataframe(labels_name_frame: pd.DataFrame,
+                   filenames: list) -> pd.DataFrame:
+    cols = ['fn'] + list(set(labels_name_frame.category))
+    new_dataset = pd.DataFrame(columns=cols)
     new_dataset['fn'] = filenames
     new_dataset[['lane', 'stopping', 'zebra', 'void']] = 0
     return new_dataset
+
+
+def split_sets(root_to_dataset: str,
+               train_perc: float = 0.7,
+               valid_perc: float = 0.2):
+    root_to_images = os.path.join(root_to_dataset, 'images')
+    img_fn = os.listdir(root_to_images)
+    random.shuffle(img_fn)
+    total = len(img_fn)
+
+    train_end = int(total*train_perc)
+    valid_end = int(total*(valid_perc+train_perc))
+    img_fn_train = img_fn[:train_end]
+    img_fn_valid = img_fn[train_end:valid_end]
+    img_fn_test = img_fn[valid_end:]
+
+    list_to_csv(os.path.join(root_to_dataset, 'train.csv'), img_fn_train)
+    list_to_csv(os.path.join(root_to_dataset, 'valid.csv'), img_fn_valid)
+    list_to_csv(os.path.join(root_to_dataset, 'test.csv'), img_fn_test)
+
+    return
 
 
 def transform_apolloscape_labels(road: int,
@@ -97,7 +122,7 @@ def transform_apolloscape_labels(road: int,
             new_dataset = upload_dataframe(dataset_v1, new_dataset, fn, lables_used)
 
             cv.imwrite(os.path.join(dst_folder_mask, fn), new_mask)
-            cv.imwrite(os.path.join(dst_folder_img, fn), img)
+            cv.imwrite(os.path.join(dst_folder_img, img_fn), img)
         new_dataset.to_csv(os.path.join(dst_folder, dst_fn), index=False)
     return
 
@@ -114,8 +139,8 @@ def main():
 
     args = parser.parse_args()
 
-    roads = [4]
-    total_records = [24]
+    roads = [2, 3]
+    total_records = [49, 58]
     camara = 6
     for i, road in enumerate(roads):
         transform_apolloscape_labels(road,
@@ -123,6 +148,7 @@ def main():
                                      camara,
                                      args.root_to_data,
                                      args.root_dst)
+    split_sets(args.root_dst)
 
 
 if __name__ == '__main__':

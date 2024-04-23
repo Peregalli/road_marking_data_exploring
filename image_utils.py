@@ -1,7 +1,8 @@
-import numpy as np
 import cv2 as cv
+import numpy as np
 import os
-import json
+
+from utils import load_labels_from_json
 
 
 def overlay_mask(image: np.ndarray,
@@ -64,13 +65,6 @@ def get_fname_with_label(folder_to_images: str,
             print(fname)
             fnames_with_label.append(fname)
     return fnames_with_label
-
-
-#TODO : change to utils.py
-def load_labels_from_json(filename):
-    with open(filename, 'r') as file:
-        data = json.load(file)
-    return data
 
 
 def write_masks_labels(mask: np.ndarray,
