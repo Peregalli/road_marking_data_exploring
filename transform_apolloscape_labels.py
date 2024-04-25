@@ -47,7 +47,7 @@ def create_folder(folder: str):
 def upload_dataframe(labels_name_frame: pd.DataFrame,
                      new_dataset: pd.DataFrame,
                      fn: str,
-                     lables_used: list) -> pd.DataFrame:
+                     lables_used: list):
     category_used = labels_name_frame[labels_name_frame['label'].isin(lables_used)].category
     new_lables = list(set(category_used))
     for new_label in new_lables:
@@ -57,8 +57,7 @@ def upload_dataframe(labels_name_frame: pd.DataFrame,
 
 def init_dataframe(labels_name_frame: pd.DataFrame,
                    filenames: list) -> pd.DataFrame:
-    cols = ['fn'] + list(set(labels_name_frame.category))
-    new_dataset = pd.DataFrame(columns=cols)
+    new_dataset = pd.DataFrame(columns=['fn']+list(set(labels_name_frame.category)))
     new_dataset['fn'] = filenames
     new_dataset[['lane', 'stopping', 'zebra', 'void']] = 0
     return new_dataset
@@ -85,8 +84,15 @@ def split_sets(root_to_dataset: str,
     return
 
 
+def get_records_names_from_road(road: int, root: str) -> list:
+    folder = f'ColorImage_road{road:02d}/ColorImage'
+    directory = os.path.join(root, folder)
+    roads = sorted(os.listdir(directory))
+    return roads
+
+
 def transform_apolloscape_labels(road: int,
-                                 records: int,
+                                 records: list,
                                  camara: int,
                                  root_to_data: str,
                                  dst_folder):
@@ -101,13 +107,13 @@ def transform_apolloscape_labels(road: int,
     create_folder(dst_folder_mask)
     create_folder(dst_folder_img)
 
-    for record in range(1, records):
-        print(f'Road {road:02d} - Record {record:03d} - Camera {camara:d}')
-        folder_to_labels = os.path.join(root_to_data, f'Labels_road{road:02d}/Label/Record{record:03d}/Camera {camara:d}')
-        folder_to_images = os.path.join(root_to_data, f'ColorImage_road{road:02d}/ColorImage/Record{record:03d}/Camera {camara:d}')
+    for record in records:
+        print(f'Road {road:02d} - '+record+' - Camera {camara:d}')
+        folder_to_labels = os.path.join(root_to_data, f'Labels_road{road:02d}/Label/{record}/Camera {camara:d}')
+        folder_to_images = os.path.join(root_to_data, f'ColorImage_road{road:02d}/ColorImage/{record}/Camera {camara:d}')
         fn_mask = sorted(os.listdir(folder_to_labels))
         new_dataset = init_dataframe(dataset_v1, fn_mask)
-        dst_fn = f'labels_road{road:02d}_record{record:03d}_camera{camara:d}.csv'
+        dst_fn = f'labels_road{road:02d}_{record}_camera{camara:d}.csv'
 
         for fn in tqdm(fn_mask):
             img_fn = fn.replace('_bin.png', '.jpg')
@@ -139,8 +145,8 @@ def main():
 
     args = parser.parse_args()
 
-    roads = [2, 3]
-    total_records = [49, 58]
+    roads = [2, 3, 4]
+    total_records = [get_records_names_from_road(road, args.root_to_data) for road in roads]
     camara = 6
     for i, road in enumerate(roads):
         transform_apolloscape_labels(road,
