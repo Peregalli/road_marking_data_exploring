@@ -7,7 +7,7 @@ import pandas as pd
 import random
 
 from tqdm import tqdm
-from image_utils import load_labels_from_json, get_labels_from_mask
+from image_utils import load_labels_from_json, get_labels_from_mask, preprocessing_blocks
 from utils import list_to_csv
 
 
@@ -19,16 +19,6 @@ def change_mask_label(mask: np.ndarray,
     new_color = dataset.loc[dataset['label'] == old_label].iloc[0]['new_label']
     new_mask[np.all(mask == old_color, axis=-1)] = new_color
     return new_mask
-
-
-def crop_mask(mask: np.ndarray,
-              x: int = 50,
-              y: int = 1250,
-              w: int = 1920,
-              h: int = 1080) -> np.ndarray:
-    H, W, _ = mask.shape
-    cropped_mask = mask[y:y+h, x:x+w]
-    return cropped_mask
 
 
 def safe_literal_eval(x):
@@ -47,19 +37,20 @@ def create_folder(folder: str):
 def upload_dataframe(labels_name_frame: pd.DataFrame,
                      new_dataset: pd.DataFrame,
                      fn: str,
-                     lables_used: list):
-    category_used = labels_name_frame[labels_name_frame['label'].isin(lables_used)].category
-    new_lables = list(set(category_used))
-    for new_label in new_lables:
-        new_dataset.loc[new_dataset['fn'] == fn, new_label] = 1
+                     new_mask: np.ndarray):
+    total_pixels = new_mask.shape[0]*new_mask.shape[1]
+    colors_used = np.unique(new_mask.reshape((-1, 3)), axis=0)
+    new_dataset.loc[len(new_dataset)] = [fn, 0, 0, 0, 0]
+    for i, color in enumerate(colors_used):
+        cout_pixels = np.sum(np.all(new_mask == color, axis=-1))
+        norm_pixels = cout_pixels/total_pixels
+        label = labels_name_frame[labels_name_frame['new_label'].apply(lambda x: x == list(color))].iloc[0].category
+        new_dataset.loc[new_dataset['fn'] == fn, label] = norm_pixels
     return new_dataset
 
 
-def init_dataframe(labels_name_frame: pd.DataFrame,
-                   filenames: list) -> pd.DataFrame:
+def init_dataframe(labels_name_frame: pd.DataFrame) -> pd.DataFrame:
     new_dataset = pd.DataFrame(columns=['fn']+list(set(labels_name_frame.category)))
-    new_dataset['fn'] = filenames
-    new_dataset[['lane', 'stopping', 'zebra', 'void']] = 0
     return new_dataset
 
 
@@ -112,23 +103,29 @@ def transform_apolloscape_labels(road: int,
         folder_to_labels = os.path.join(root_to_data, f'Labels_road{road:02d}/Label/{record}/Camera {camara:d}')
         folder_to_images = os.path.join(root_to_data, f'ColorImage_road{road:02d}/ColorImage/{record}/Camera {camara:d}')
         fn_mask = sorted(os.listdir(folder_to_labels))
-        new_dataset = init_dataframe(dataset_v1, fn_mask)
+        new_dataset = init_dataframe(dataset_v1)
         dst_fn = f'labels_road{road:02d}_{record}_camera{camara:d}.csv'
 
         for fn in tqdm(fn_mask):
             img_fn = fn.replace('_bin.png', '.jpg')
             img = cv.imread(os.path.join(folder_to_images, img_fn))
-            img = crop_mask(img)
             mask = cv.imread(os.path.join(folder_to_labels, fn))
-            mask = crop_mask(mask)
-            lables_used = get_labels_from_mask(mask, old_labels)
-            new_mask = mask[:, :, ::-1].copy()
-            for label_used in lables_used:
-                new_mask = change_mask_label(new_mask, label_used, dataset_v1)
-            new_dataset = upload_dataframe(dataset_v1, new_dataset, fn, lables_used)
+            block_imgs, block_masks = preprocessing_blocks(img, mask, 512, 0)
+            # Preprocess data
+            for i, block_mask in enumerate(block_masks):
+                lables_used = get_labels_from_mask(block_mask, old_labels)
+                new_mask = block_mask[:, :, ::-1].copy()
+                for label_used in lables_used:
+                    new_mask = change_mask_label(new_mask, label_used, dataset_v1)
+                new_fn_mask = fn.replace('_bin.png', f'_{i}_bin.png')
+                new_fn_img = img_fn.replace('.png', f'_{i}.png')
+                new_dataset = upload_dataframe(dataset_v1,
+                                               new_dataset,
+                                               new_fn_mask,
+                                               new_mask)
 
-            cv.imwrite(os.path.join(dst_folder_mask, fn), new_mask)
-            cv.imwrite(os.path.join(dst_folder_img, img_fn), img)
+                cv.imwrite(os.path.join(dst_folder_mask, new_fn_mask), new_mask)
+                cv.imwrite(os.path.join(dst_folder_img, new_fn_img), block_imgs[i])
         new_dataset.to_csv(os.path.join(dst_folder, dst_fn), index=False)
     return
 
