@@ -9,7 +9,7 @@ def list_to_csv(csv_fname: str, list_to_save: list):
             writer.writerow([item])
 
 
-def load_labels_from_json(filename):
+def load_from_json(filename):
     with open(filename, 'r') as file:
         data = json.load(file)
     return data

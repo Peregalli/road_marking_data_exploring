@@ -3,7 +3,7 @@ import math
 import numpy as np
 import os
 
-from utils import load_labels_from_json
+from utils import load_from_json
 from typing import Tuple
 
 
@@ -58,7 +58,8 @@ def get_fname_with_label(folder_to_images: str,
                          dataset_name: str,
                          label: str) -> str:
     imgs_in_folder = os.listdir(folder_to_images)
-    dataset_labels = load_labels_from_json('dataset_labels.json')[dataset_name]['labels']
+    dataset_labels_info = load_from_json('config/dataset_labels.json')
+    dataset_labels = dataset_labels_info[dataset_name]['labels']
     fnames_with_label = []
     for fname in imgs_in_folder:
         mask_name = (fname).replace('.jpg', '_bin.png')
@@ -71,13 +72,13 @@ def get_fname_with_label(folder_to_images: str,
 
 def write_masks_labels(mask: np.ndarray,
                        dataset_name: str,
-                       folder_to_labels: str = 'dataset_labels.json') -> np.ndarray:
+                       folder_to_labels: str) -> np.ndarray:
 
     assert os.path.exists(folder_to_labels), f'{folder_to_labels} does not exist'
-    assert dataset_name in load_labels_from_json(folder_to_labels).keys(), f'{dataset_name} not in {folder_to_labels}'
+    assert dataset_name in load_from_json(folder_to_labels).keys(), f'{dataset_name} not in {folder_to_labels}'
 
     # Get labels from that dataset
-    dataset_labels = load_labels_from_json(folder_to_labels)[dataset_name]['labels']
+    dataset_labels = load_from_json(folder_to_labels)[dataset_name]['labels']
     lables_used = get_labels_from_mask(mask, dataset_labels)
 
     mask_with_labels = mask.copy()
