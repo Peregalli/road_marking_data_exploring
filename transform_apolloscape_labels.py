@@ -56,19 +56,17 @@ def init_dataframe(labels_name_frame: pd.DataFrame) -> pd.DataFrame:
 
 def split_sets(root_to_dataset: str,
                train_perc: float = 0.7,
-               valid_perc: float = 0.2,
-               seed: int = 42):
+               valid_perc: float = 0.2):
     root_to_images = os.path.join(root_to_dataset, 'images')
     img_fn = os.listdir(root_to_images)
-    img_fn_filtered = [fn for fn in img_fn if fn.endswith(('_4.jpg', '_5.jpg', '_6.jpg', '_7.jpg'))]
-    random.shuffle(img_fn_filtered, seed)
-    total = len(img_fn_filtered)
+    random.shuffle(img_fn)
+    total = len(img_fn)
 
     train_end = int(total*train_perc)
     valid_end = int(total*(valid_perc+train_perc))
-    img_fn_train = img_fn_filtered[:train_end]
-    img_fn_valid = img_fn_filtered[train_end:valid_end]
-    img_fn_test = img_fn_filtered[valid_end:]
+    img_fn_train = img_fn[:train_end]
+    img_fn_valid = img_fn[train_end:valid_end]
+    img_fn_test = img_fn[valid_end:]
 
     list_to_csv(os.path.join(root_to_dataset, 'train.csv'), img_fn_train)
     list_to_csv(os.path.join(root_to_dataset, 'valid.csv'), img_fn_valid)
@@ -89,7 +87,7 @@ def transform_apolloscape_labels(road: int,
                                  root_to_data: str,
                                  dst_folder):
 
-    dataset_v1 = pd.read_csv('config/apolloscape_labels_v1.csv')
+    dataset_v1 = pd.read_csv('config/lane_marking_dataset_v1.csv')
     dataset_v1['color'] = dataset_v1['color'].apply(safe_literal_eval)
     dataset_v1['new_label'] = dataset_v1['new_label'].apply(safe_literal_eval)
     old_labels = load_from_json('config/dataset_labels.json')['apolloscape_lanemark']['labels']

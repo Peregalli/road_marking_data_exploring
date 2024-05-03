@@ -2,5 +2,9 @@
     "camera": 6,
     "cell_size": 512,
     "overlap": 0,
-    "classes": {}
+    "classes": {"lane": [255, 0, 0],
+                "void": [0, 0, 0],
+                "stopping": [0, 255, 0],
+                "zebra": [0, 0, 255]
+            }
 }
