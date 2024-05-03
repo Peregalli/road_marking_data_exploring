@@ -56,17 +56,19 @@ def init_dataframe(labels_name_frame: pd.DataFrame) -> pd.DataFrame:
 
 def split_sets(root_to_dataset: str,
                train_perc: float = 0.7,
-               valid_perc: float = 0.2):
+               valid_perc: float = 0.2,
+               seed: int = 42):
     root_to_images = os.path.join(root_to_dataset, 'images')
     img_fn = os.listdir(root_to_images)
-    random.shuffle(img_fn)
-    total = len(img_fn)
+    img_fn_filtered = [fn for fn in img_fn if fn.endswith(('_4.jpg', '_5.jpg', '_6.jpg', '_7.jpg'))]
+    random.shuffle(img_fn_filtered, seed)
+    total = len(img_fn_filtered)
 
     train_end = int(total*train_perc)
     valid_end = int(total*(valid_perc+train_perc))
-    img_fn_train = img_fn[:train_end]
-    img_fn_valid = img_fn[train_end:valid_end]
-    img_fn_test = img_fn[valid_end:]
+    img_fn_train = img_fn_filtered[:train_end]
+    img_fn_valid = img_fn_filtered[train_end:valid_end]
+    img_fn_test = img_fn_filtered[valid_end:]
 
     list_to_csv(os.path.join(root_to_dataset, 'train.csv'), img_fn_train)
     list_to_csv(os.path.join(root_to_dataset, 'valid.csv'), img_fn_valid)

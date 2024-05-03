@@ -15,6 +15,11 @@ def get_info_from_generated_data(folder_data: str):
     total_images = 0
     for file_names in labels_files:
         df_temp = pd.read_csv(file_names, index_col=0)
+        select_tiles = df_temp.index.str.endswith(('_4_bin.png',
+                                                   '_5_bin.png',
+                                                   '_6_bin.png',
+                                                   '_7_bin.png'))
+        df_temp = df_temp[select_tiles]
         df.loc[len(df)] = df_temp.mean()
         void_images += sum(df_temp.void == 1)
         total_images += len(df_temp)
