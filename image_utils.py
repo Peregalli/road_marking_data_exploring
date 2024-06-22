@@ -119,7 +119,7 @@ def read_block(
                 bottom=bottom_pad,
                 left=left_pad,
                 right=right_pad,
-                borderType=cv.BORDER_CONSTANT,
+                borderType=cv.BORDER_REFLECT,
                 value=pad_fill_value,
             )
 

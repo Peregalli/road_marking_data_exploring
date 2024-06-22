@@ -40,7 +40,7 @@ def upload_dataframe(labels_name_frame: pd.DataFrame,
                      new_mask: np.ndarray):
     total_pixels = new_mask.shape[0]*new_mask.shape[1]
     colors_used = np.unique(new_mask.reshape((-1, 3)), axis=0)
-    new_dataset.loc[len(new_dataset)] = [fn, 0, 0, 0, 0]
+    new_dataset.loc[len(new_dataset)] = [fn, 0, 0]
     for i, color in enumerate(colors_used):
         cout_pixels = np.sum(np.all(new_mask == color, axis=-1))
         norm_pixels = cout_pixels/total_pixels
@@ -59,6 +59,7 @@ def split_sets(root_to_dataset: str,
                valid_perc: float = 0.2):
     root_to_images = os.path.join(root_to_dataset, 'images')
     img_fn = os.listdir(root_to_images)
+    #img_fn = [filename for filename in img_fn if filename.endswith(('_4.jpg', '_5.jpg', '_6.jpg', '_7.jpg'))]
     random.shuffle(img_fn)
     total = len(img_fn)
 
@@ -87,7 +88,7 @@ def transform_apolloscape_labels(road: int,
                                  root_to_data: str,
                                  dst_folder):
 
-    dataset_v1 = pd.read_csv('config/lane_marking_dataset_v1.csv')
+    dataset_v1 = pd.read_csv('config/lane_marking_dataset_v3.csv')
     dataset_v1['color'] = dataset_v1['color'].apply(safe_literal_eval)
     dataset_v1['new_label'] = dataset_v1['new_label'].apply(safe_literal_eval)
     old_labels = load_from_json('config/dataset_labels.json')['apolloscape_lanemark']['labels']
@@ -115,7 +116,8 @@ def transform_apolloscape_labels(road: int,
                                                            cfg["cell_size"],
                                                            cfg["overlap"])
             # Preprocess data
-            for i, block_mask in enumerate(block_masks):
+            for i in cfg["block_index"]:
+                block_mask = block_masks[i]
                 lables_used = get_labels_from_mask(block_mask, old_labels)
                 new_mask = block_mask[:, :, ::-1].copy()
                 for label_used in lables_used:
@@ -129,7 +131,7 @@ def transform_apolloscape_labels(road: int,
                                                new_fn_mask,
                                                new_mask)
 
-                cv.imwrite(os.path.join(dst_folder_mask, new_fn_mask), new_mask)
+                cv.imwrite(os.path.join(dst_folder_mask, new_fn_mask), new_mask[:,:,0])
                 cv.imwrite(os.path.join(dst_folder_img, new_fn_img), block_imgs[i])
         new_dataset.to_csv(os.path.join(dst_folder, dst_fn), index=False)
     return
@@ -147,8 +149,8 @@ def main():
 
     args = parser.parse_args()
 
-    roads = [3, 4]
-    total_records = [get_records_names_from_road(road, args.root_to_data) for road in roads]
+    roads = [3,4]
+    total_records = [get_records_names_from_road(road, args.root_to_data)[:5] for road in roads]
     for i, road in enumerate(roads):
         transform_apolloscape_labels(road,
                                      total_records[i],

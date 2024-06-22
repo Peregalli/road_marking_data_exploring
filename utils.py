@@ -19,9 +19,9 @@ def load_from_json(filename):
 
 
 def setup_logging(dataset_name):
-    if not os.path.exists('logfiles'):
-        os.mkdir('logfiles')
-    logfile = f'logfiles/{dataset_name}.log'
+    if not os.path.exists('.logfiles'):
+        os.mkdir('.logfiles')
+    logfile = f'.logfiles/{dataset_name}.log'
     # Set up logging
     logging.basicConfig(
         level=logging.INFO,
